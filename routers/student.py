@@ -41,13 +41,34 @@ def get_all_students( skip: int = 0, limit: int = 10, db: Session = Depends(get_
 
 # READ - Get single student
 @router.get("/{student_id}", response_model=StudentResponse , status_code=200)
-
 def get_student(student_id: int, db: Session = Depends(get_db)):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
+# UPDATE - Update student
+@router.put("/{student_id}", response_model=StudentResponse , status_code=200)
+def update_student(student_id: int, student_update: StudentUpdate, db: Session = Depends(get_db)):
     
     student = db.query(Student).filter(Student.id == student_id).first()
     
     if not student:
-        
         raise HTTPException(status_code=404, detail="Student not found")
     
+     # Convert the Pydantic model to a dictionary.
+    update_data = student_update.model_dump()
+    
+    if update_data.get('name') is not None:
+        student.name = update_data['name']
+    
+    if update_data.get('age') is not None:
+        student.age = update_data['age']
+        
+    if update_data.get('email') is not None:
+        student.email = update_data['email']
+            
+    db.commit()
+    db.refresh(student)
     return student
+
